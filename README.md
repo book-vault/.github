@@ -6,33 +6,35 @@ Welcome to Book Vault - A Modern Book Management System
 
 ```mermaid
 graph TB
-    subgraph "Frontend [GitHub Pages]"
-        A[React Application]
+    subgraph "GitHub"
+        A[Frontend Repository]
+        B[Backend Repository]
+        C[Infrastructure Repository]
+        D[GitHub Actions]
+        E[GitHub Pages]
+        F[GitHub Container Registry]
     end
 
-    subgraph "Backend Infrastructure"
-        subgraph "AWS Cloud"
-            B[VPC]
-            C[EC2 Instance]
-            
-            subgraph "Kubernetes Cluster"
-                D[Backend Deployment]
-                E[Backend Service]
-                F[Ingress Controller]
+    subgraph "AWS Cloud"
+        subgraph "VPC"
+            G[EC2 Instance]
+            subgraph "Kubernetes Cluster in EC2"
+                H[Backend Deployment]
+                I[Backend Service]
+                J[Ingress Controller]
             end
         end
     end
 
-    subgraph "CI/CD"
-        G[GitHub Actions]
-        H[GitHub Container Registry]
-    end
-
-    A -->|API Calls| F
-    F --> E
-    E --> D
-    G -->|Push Container| H
-    D -->|Pull Container| H
+    A -->|Deploy| E
+    B -->|Build & Push| F
+    C -->|Configure| G
+    D -->|CI/CD| A
+    D -->|CI/CD| B
+    D -->|CI/CD| C
+    H -->|Pull Image| F
+    J -->|Route Traffic| I
+    I -->|Forward| H
 ```
 
 ## 🌐 Project Overview
@@ -43,20 +45,18 @@ Book Vault is a comprehensive book management system split across three main rep
 ```
 book-vault/
 ├── frontend/          # React frontend application
-├── backend/           # Node.js backend service
+├── backend/           # Node.js backend service (Node 18.20.4)
 └── infra/            # Infrastructure as Code (Terraform)
 ```
 
 ### Frontend Repository
-[![Deploy to GitHub Pages](https://github.com/book-vault/frontend/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)](https://github.com/book-vault/frontend/actions)
 - **Tech Stack**: React.js
 - **Hosting**: GitHub Pages
 - **URL**: [https://bookvault.maniish.in](https://bookvault.maniish.in)
 - **CI/CD**: Automated deployment via GitHub Actions
 
 ### Backend Repository
-[![Container Build](https://github.com/book-vault/backend/workflows/Container%20Build/badge.svg)](https://github.com/book-vault/backend/actions)
-- **Tech Stack**: Node.js
+- **Tech Stack**: Node.js (v18.20.4)
 - **Container Registry**: GitHub Container Registry
 - **Image**: `ghcr.io/book-vault/backend`
 - **API Endpoint**: [https://backend.bookvault.maniish.in](https://backend.bookvault.maniish.in)
@@ -66,33 +66,45 @@ book-vault/
 - **Cloud Provider**: AWS
 - **Components**:
   - VPC Configuration
-  - EC2 Instance
-  - Kubernetes Cluster
+  - EC2 Instance with Kubernetes
+  - Kubernetes Resources (Deployment, Service, Ingress)
 
 ## 🔧 Infrastructure Architecture
 
 ```mermaid
 flowchart TB
+    subgraph GitHub["GitHub Platform"]
+        direction TB
+        REPO["Repositories"]
+        GHA["GitHub Actions"]
+        GHCR["Container Registry"]
+        GHP["GitHub Pages"]
+    end
+
     subgraph AWS["AWS Cloud"]
         subgraph VPC["VPC"]
-            subgraph Public["Public Subnet"]
-                EC2["EC2 Instance"]
-                
-                subgraph K8S["Kubernetes Cluster"]
-                    D["Deployment"]
-                    S["Service"]
-                    I["Ingress"]
-                end
+            direction TB
+            EC2["EC2 Instance"]
+            subgraph K8S["Kubernetes on EC2"]
+                direction LR
+                D["Deployment"]
+                S["Service"]
+                I["Ingress"]
             end
-            NAT["NAT Gateway"]
-            IGW["Internet Gateway"]
         end
+        IGW["Internet Gateway"]
     end
     
-    Client-->|HTTPS|I
-    I-->S
-    S-->D
-    D-->|Pull Image|CR["GitHub Container Registry"]
+    REPO -->|Trigger| GHA
+    GHA -->|Deploy Frontend| GHP
+    GHA -->|Push Container| GHCR
+    GHA -->|Apply| VPC
+    
+    D -->|Pull Image| GHCR
+    Client -->|"HTTPS (bookvault.maniish.in)"| GHP
+    Client -->|"HTTPS (backend.bookvault.maniish.in)"| I
+    I --> S
+    S --> D
 ```
 
 ## 🚀 Deployment Flow
@@ -113,46 +125,11 @@ flowchart TB
 3. **Infrastructure Deployment**
    ```mermaid
    graph LR
-       A[Terraform Init] -->|Initialize| B[Terraform Plan]
-       B -->|Review| C[Terraform Apply]
-       C -->|Create| D[AWS Resources]
-       D -->|Configure| E[Kubernetes]
-       E -->|Deploy| F[Applications]
+       A[Terraform Code] -->|GitOps| B[GitHub Actions]
+       B -->|Apply| C[AWS Resources]
+       C -->|Create| D[EC2 with K8s]
+       D -->|Deploy| E[Applications]
    ```
-
-## 🛠️ Local Development Setup
-
-### Prerequisites
-- Node.js 16+
-- Docker
-- Kubernetes CLI (kubectl)
-- Terraform
-- AWS CLI
-
-### Frontend Setup
-```bash
-git clone https://github.com/book-vault/frontend.git
-cd frontend
-npm install
-npm start
-```
-
-### Backend Setup
-```bash
-git clone https://github.com/book-vault/backend.git
-cd backend
-npm install
-npm run dev
-```
-
-### Infrastructure Setup
-```bash
-git clone https://github.com/book-vault/infra.git
-cd infra
-terraform init
-terraform plan
-terraform apply
-```
 
 ## 📡 Endpoints
 
